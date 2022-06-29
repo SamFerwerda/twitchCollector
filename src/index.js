@@ -37,6 +37,7 @@ async function loginToTwitch(page){
 async function claimRewards(page){
     try {
         while (true){
+            await page.bringToFront();
             await page.click('button[data-test-selector="DropsCampaignInProgressRewardPresentation-claim-button"]');
         }
     } catch (error){
@@ -46,25 +47,42 @@ async function claimRewards(page){
 }
 
 async function setStreamPage(page){
-    for (let index = 0; index < STREAMERS.streamersToWatchOrdered.length; index++) {
-        const streamer = STREAMERS.streamersToWatchOrdered[index];
-        const url = `https://www.twitch.tv/${streamer}`;
 
-        // go to streamers page
-        await page.goto(url, {waitUntil: 'load' });
+    /**
+     * const spanList = [...document.querySelectorAll("[data-a-id*='followed-channel-']")];
+     * const onlineSmiters = spanList.filter((element) => {return element.childNodes[1].childNodes[0].childNodes[1].innerText === "SMITE"});
+     * const streamersPlayingSmite = online.map(element => {return element.childNodes[1].childNodes[0].childNodes[0].innerText});
+     */
+
+        await page.goto('https://www.twitch.tv/', {waitUntil: 'load' });
 
         await delay(10000);
 
         // check if streamer is live
-        const isLive =  await page.evaluate(() => {
-            let elements = document.getElementsByClassName('live-time');
-            return elements.length;});
+        const onlineSmiteStreamers =  await page.evaluate(() => {
+            const spanList = [...document.querySelectorAll("[data-a-id*='followed-channel-']")];
+            const onlineSmiters = spanList.filter((element) => {return element?.childNodes[1]?.childNodes[0]?.childNodes[1]?.innerText === "SMITE"});
+            const streamersPlayingSmite = onlineSmiters.map(element => {return element?.childNodes[1]?.childNodes[0]?.childNodes[0]?.innerText});
+            return streamersPlayingSmite;});
 
-        console.log(isLive);
-        if (isLive){
-            return;
+        console.log(onlineSmiteStreamers);
+        
+        let streamer;
+
+        // treats with prio (0 element highest prio etc)
+        for (let index = 0; index < STREAMERS.streamersToWatchOrdered.length; index++) {
+            streamer = STREAMERS.streamersToWatchOrdered[index];
+            if (onlineSmiteStreamers.indexOf(streamer) != -1){
+                break;
+            }
         }
-    }
+
+        const url = `https://www.twitch.tv/${streamer}`;
+
+        await page.bringToFront();
+
+        // go to streamers page
+        await page.goto(url, {waitUntil: 'load' });
 }
 
 (async function(){
@@ -74,8 +92,7 @@ async function setStreamPage(page){
     headless:false, 
     defaultViewport:null,
     devtools: true,
-    //args: ['--window-size=1920,1170','--window-position=0,0']
-    args: ["--window-size=1920,1080", "--window-position=1921,0"]});
+    args: ["--window-size=1920,1080", "--window-position=0,0"]});
 
     // create page
     const inventoryPage = await browser.newPage();
