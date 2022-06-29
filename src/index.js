@@ -45,22 +45,54 @@ async function claimRewards(page){
     }
 }
 
+async function setStreamPage(page){
+    for (let index = 0; index < STREAMERS.streamersToWatchOrdered.length; index++) {
+        const streamer = STREAMERS.streamersToWatchOrdered[index];
+        const url = `https://www.twitch.tv/${streamer}`;
+
+        // go to streamers page
+        await page.goto(url, {waitUntil: 'load' });
+
+        await delay(10000);
+
+        // check if streamer is live
+        const isLive =  await page.evaluate(() => {
+            let elements = document.getElementsByClassName('live-time');
+            return elements.length;});
+
+        console.log(isLive);
+        if (isLive){
+            return;
+        }
+    }
+}
+
 (async function(){
 
     // create browser
-    const browser = await p.launch({headless:false});
+    const browser = await p.launch( {executablePath: '/Program Files (x86)/Google/Chrome/Application/Chrome',
+    headless:false, 
+    defaultViewport:null,
+    devtools: true,
+    //args: ['--window-size=1920,1170','--window-position=0,0']
+    args: ["--window-size=1920,1080", "--window-position=1921,0"]});
 
     // create page
-    const page = await browser.newPage();
+    const inventoryPage = await browser.newPage();
 
-    await loginToTwitch(page);
+    await loginToTwitch(inventoryPage);
 
     await delay(3000);
 
+    // doesnt work atm because of video not loading
+    const streamPage = await browser.newPage();
+
     while (true) {
-        await claimRewards(page);
+        await claimRewards(inventoryPage);
+        // Doesnt work atm
+        await setStreamPage(streamPage); 
         await delay(process.env.INTERVAL);
-        await page.reload({ waitUntil: ["networkidle0", "domcontentloaded"] });
+        await inventoryPage.reload({ waitUntil: ["networkidle0", "domcontentloaded"] });
         await delay(3000);
     }
 })();

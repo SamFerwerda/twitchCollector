@@ -4,6 +4,11 @@ const URLS = {
 
 const STREAMERS = {
     streamersToWatchOrdered: [
+        'nika',
+        'russel',
+        'mizkif',
+        'Incon',
+        'russel',
         'thebesttaco',
         'mang0',
         'cyr'
